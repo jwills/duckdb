@@ -171,7 +171,8 @@ enum class PandasType : uint8_t {
 };
 
 struct PandasScanFunctionData : public TableFunctionData {
-	PandasScanFunctionData(py::handle df, idx_t row_count, vector<PandasType> pandas_types_, vector<LogicalType> sql_types_)
+	PandasScanFunctionData(py::handle df, idx_t row_count, vector<PandasType> pandas_types_,
+	                       vector<LogicalType> sql_types_)
 	    : df(df), row_count(row_count), pandas_types(move(pandas_types_)), sql_types(move(sql_types_)) {
 	}
 	py::handle df;
@@ -283,7 +284,8 @@ struct PandasScanFunction : public TableFunction {
 		FlatVector::SetData(out, (data_ptr_t)(src_ptr + offset));
 	}
 
-	template <class T> static void scan_pandas_numeric_object(py::array numpy_col, idx_t count, idx_t offset, Vector &out) {
+	template <class T>
+	static void scan_pandas_numeric_object(py::array numpy_col, idx_t count, idx_t offset, Vector &out) {
 		auto src_ptr = (PyObject **)numpy_col.data();
 		auto tgt_ptr = FlatVector::GetData<T>(out);
 		auto &nullmask = FlatVector::Nullmask(out);
@@ -1027,10 +1029,6 @@ struct DuckDBPyConnection {
 		context.transaction.BeginTransaction();
 		context.catalog.CreateTableFunction(context, &info);
 		context.transaction.Commit();
-
-		if (!read_only) {
-			res->connection->Query("CREATE OR REPLACE VIEW sqlite_master AS SELECT * FROM sqlite_master()");
-		}
 
 		return res;
 	}
