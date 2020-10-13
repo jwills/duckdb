@@ -144,4 +144,8 @@ struct UnicodeFun {
 	static void RegisterFunction(BuiltinFunctions &set);
 };
 
+struct MD5Fun {
+	static void RegisterFunction(BuiltinFunctions &set);
+};
+
 } // namespace duckdb
