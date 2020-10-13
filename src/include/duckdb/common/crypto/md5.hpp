@@ -1,5 +1,8 @@
 #pragma once
 
+#include "duckdb/common/constants.hpp"
+#include "duckdb/common/string.hpp"
+
 #define MD5_HASH_LENGTH 64
 
 /*
@@ -14,14 +17,26 @@
 #define uint32 unsigned int
 #endif
 
-struct Context {
+namespace duckdb {
+
+struct MD5Context {
 	int isInit;
 	uint32 buf[4];
 	uint32 bits[2];
 	unsigned char in[64];
 };
-typedef struct Context MD5Context;
 
-void md5_init(MD5Context *context);
-void md5_add(MD5Context *context, const char *z);
-void md5_finish(MD5Context *context, char zResult[]);
+class MD5 {
+    public:
+    MD5();
+    ~MD5() {}
+
+    void Add(const string &z);
+    void Add(const char *z);
+    string Finish();
+
+    private:
+    unique_ptr<MD5Context> ctx;
+};
+
+} // namespace duckdb

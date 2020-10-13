@@ -19,27 +19,12 @@
  * needed on buffers full of bytes, and then call MD5Final, which
  * will fill a supplied 16-byte array with the digest.
  */
-#include <string.h>
+#include "duckdb/common/crypto/md5.hpp"
+#include "duckdb/common/helper.hpp"
 
-/*
- * If compiled on a machine that doesn't have a 32-bit integer,
- * you just set "uint32" to the appropriate datatype for an
- * unsigned 32-bit integer.  For example:
- *
- *       cc -Duint32='unsigned long' md5.c
- *
- */
-#ifndef uint32
-#define uint32 unsigned int
-#endif
+namespace duckdb {
 
-struct Context {
-	int isInit;
-	uint32 buf[4];
-	uint32 bits[2];
-	unsigned char in[64];
-};
-typedef struct Context MD5Context;
+namespace {
 
 /*
  * Note: this code is harmless on little-endian machines.
@@ -168,8 +153,7 @@ static void MD5Init(MD5Context *ctx) {
  * Update context to reflect the concatenation of another buffer full
  * of bytes.
  */
-static void MD5Update(MD5Context *pCtx, const unsigned char *buf, unsigned int len) {
-	struct Context *ctx = (struct Context *)pCtx;
+static void MD5Update(MD5Context *ctx, const unsigned char *buf, unsigned int len) {
 	uint32 t;
 
 	/* Update bitcount */
@@ -217,8 +201,7 @@ static void MD5Update(MD5Context *pCtx, const unsigned char *buf, unsigned int l
  * Final wrapup - pad to 64-byte boundary with the bit pattern
  * 1 0* (64-bit count of bits processed, MSB-first)
  */
-static void MD5Final(unsigned char digest[16], MD5Context *pCtx) {
-	struct Context *ctx = (struct Context *)pCtx;
+static void MD5Final(unsigned char digest[16], MD5Context *ctx) {
 	unsigned count;
 	unsigned char *p;
 
@@ -276,38 +259,26 @@ static void DigestToBase16(unsigned char *digest, char *zBuf) {
 	zBuf[j] = 0;
 }
 
-/*
-** Status of an MD5 hash.
-*/
-static MD5Context ctx;
-static int isInit = 0;
-static char zResult[34] = "";
+} // anonymous namespace
 
-/*
-** Add additional text to the current MD5 hash.
-*/
-void md5_add(const char *z);
-
-void md5_add(const char *z) {
-	if (!isInit) {
-		MD5Init(&ctx);
-		isInit = 1;
-	}
-	MD5Update(&ctx, (unsigned char *)z, (unsigned)strlen(z));
+MD5::MD5() : ctx(make_unique<MD5Context>()) {
+	MD5Init(ctx.get());
 }
 
-/*
-** Compute the final signature.  Reset the hash generator in preparation
-** for the next round.
-*/
-const char *md5_finish(void);
-
-const char *md5_finish(void) {
-	if (isInit) {
-		unsigned char digest[16];
-		MD5Final(digest, &ctx);
-		isInit = 0;
-		DigestToBase16(digest, zResult);
-	}
-	return zResult;
+void MD5::Add(const string &z) {
+	Add(z.c_str());
 }
+
+void MD5::Add(const char *z) {
+	MD5Update(ctx.get(), (unsigned char *)z, (unsigned)strlen(z));
+}
+
+string MD5::Finish() {
+	unsigned char digest[16];
+	MD5Final(digest, ctx.get());
+	char zResult[34] = "";
+	DigestToBase16(digest, zResult);
+	return string(zResult);
+}
+
+} // namespace duckdb
