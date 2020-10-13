@@ -1,0 +1,28 @@
+# name: test/sql/function/string/test_md5.test
+# description: Test md5 function
+# group: [string]
+
+statement ok
+PRAGMA enable_verification
+
+statement ok
+CREATE TABLE strings(s VARCHAR)
+
+statement ok
+INSERT INTO strings VALUES ('hello'), ('world'), (NULL)
+
+# normal length
+query I
+SELECT md5(s) FROM strings ORDER BY s
+----
+NULL
+5d41402abc4b2a76b9719d911017c592
+7d793037a0760186574b0282f2f435e7
+
+# length after concat
+query I
+SELECT md5(s || ' ' || '🦆') FROM strings ORDER BY s
+----
+NULL
+49c1db960402c5f4f17797c9747cb02a
+b1a00f2f87f5c9243a4e3444efdaafe3
